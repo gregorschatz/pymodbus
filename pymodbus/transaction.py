@@ -1,11 +1,11 @@
 """Collection of transaction based abstractions."""
 # pylint: disable=missing-type-doc
-from functools import partial
 import logging
 import socket
 import struct
-from threading import RLock
 import time
+from functools import partial
+from threading import RLock
 
 from pymodbus.constants import Defaults
 from pymodbus.exceptions import (
@@ -505,7 +505,7 @@ class DictTransactionManager(ModbusTransactionManager):
     def addTransaction(self, request, tid=None):
         """Add a transaction to the handler.
 
-        This holds the requets in case it needs to be resent.
+        This holds the requests in case it needs to be resent.
         After being sent, the request is removed.
 
         :param request: The request to hold on to
@@ -526,7 +526,10 @@ class DictTransactionManager(ModbusTransactionManager):
         """
         txt = f"Getting transaction {tid}"
         _logger.debug(txt)
-
+        if not tid:
+            if self.transactions:
+                return self.transactions.popitem()[1]
+            return None
         return self.transactions.pop(tid, None)
 
     def delTransaction(self, tid):
@@ -564,7 +567,7 @@ class FifoTransactionManager(ModbusTransactionManager):
     def addTransaction(self, request, tid=None):
         """Add a transaction to the handler.
 
-        This holds the requets in case it needs to be resent.
+        This holds the requests in case it needs to be resent.
         After being sent, the request is removed.
 
         :param request: The request to hold on to

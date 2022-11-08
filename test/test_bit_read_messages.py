@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Bit Message Test Fixture.
 
 This fixture tests the functionality of all the
@@ -8,9 +7,8 @@ bit based request/response messages:
 * Read Coils
 """
 import struct
-
-from test.conftest import MockContext
 import unittest
+from test.conftest import MockContext
 
 from pymodbus.bit_read_message import (
     ReadBitsRequestBase,
@@ -135,10 +133,3 @@ class ModbusBitMessageTests(unittest.TestCase):
         for request, expected in iter(requests.items()):
             pdu_len = request.get_response_pdu_size()
             self.assertEqual(pdu_len, expected)
-
-
-# ---------------------------------------------------------------------------#
-#  Main
-# ---------------------------------------------------------------------------#
-if __name__ == "__main__":
-    unittest.main()

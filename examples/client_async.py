@@ -20,39 +20,31 @@ options:
 The corresponding server must be started before e.g. as:
     python3 server_sync.py
 """
-import argparse
 import asyncio
 import logging
+import os
 
 # --------------------------------------------------------------------------- #
 # import the various client implementations
 # --------------------------------------------------------------------------- #
+from examples.helper import get_commandline
 from pymodbus.client import (
     AsyncModbusSerialClient,
     AsyncModbusTcpClient,
     AsyncModbusTlsClient,
     AsyncModbusUdpClient,
 )
-from pymodbus.transaction import (
-    ModbusAsciiFramer,
-    ModbusBinaryFramer,
-    ModbusRtuFramer,
-    ModbusSocketFramer,
-    ModbusTlsFramer,
-)
 
 
-def setup_client(args=None):
+_logger = logging.getLogger()
+
+
+def setup_async_client(args):
     """Run client setup."""
-    if not args:
-        args = get_commandline()
-    if args.comm != "serial":
-        args.port = int(args.port)
     _logger.info("### Create client object")
-
     if args.comm == "tcp":
         client = AsyncModbusTcpClient(
-            "127.0.0.1",
+            args.host,
             port=args.port,  # on which port
             # Common optional paramers:
             framer=args.framer,
@@ -66,7 +58,7 @@ def setup_client(args=None):
         )
     elif args.comm == "udp":
         client = AsyncModbusUdpClient(
-            "127.0.0.1",
+            args.host,
             port=args.port,
             # Common optional paramers:
             framer=args.framer,
@@ -96,8 +88,15 @@ def setup_client(args=None):
             #    handle_local_echo=False,
         )
     elif args.comm == "tls":
+        cwd = os.getcwd().split("/")[-1]
+        if cwd == "examples":
+            path = "."
+        elif cwd == "test":
+            path = "../examples"
+        else:
+            path = "examples"
         client = AsyncModbusTlsClient(
-            "localhost",
+            args.host,
             port=args.port,
             # Common optional paramers:
             framer=args.framer,
@@ -107,89 +106,30 @@ def setup_client(args=None):
             #    close_comm_on_error=False,
             #    strict=True,
             # TLS setup parameters
-            #    sslctx=None,
-            #    certfile=None,
-            #    keyfile=None,
-            #    password=None,
-            #    server_hostname="localhost",
+            #    sslctx=sslctx,
+            certfile=f"{path}/certificates/pymodbus.crt",
+            keyfile=f"{path}/certificates/pymodbus.key",
+            #    password="none",
+            server_hostname="localhost",
         )
     return client
 
 
-async def run_client(client, modbus_calls=None):
+async def run_async_client(client, modbus_calls=None):
     """Run sync client."""
     _logger.info("### Client starting")
     await client.connect()
     assert client.protocol
     if modbus_calls:
-        await modbus_calls(client.protocol)
+        await modbus_calls(client)
     await client.close()
     _logger.info("### End of Program")
 
 
-# --------------------------------------------------------------------------- #
-# Extra code, to allow commandline parameters instead of changing the code
-# --------------------------------------------------------------------------- #
-FORMAT = "%(asctime)-15s %(levelname)-8s %(module)-15s:%(lineno)-8s %(message)s"
-logging.basicConfig(format=FORMAT)
-_logger = logging.getLogger()
-
-
-def get_commandline():
-    """Read and validate command line arguments"""
-    parser = argparse.ArgumentParser(
-        description="Connect/disconnect a synchronous client."
-    )
-    parser.add_argument(
-        "--comm",
-        choices=["tcp", "udp", "serial", "tls"],
-        help='"serial", "tcp", "udp" or "tls"',
-        type=str,
-    )
-    parser.add_argument(
-        "--framer",
-        choices=["ascii", "binary", "rtu", "socket", "tls"],
-        help='"ascii", "binary", "rtu", "socket" or "tls"',
-        type=str,
-    )
-    parser.add_argument(
-        "--log",
-        choices=["critical", "error", "warning", "info", "debug"],
-        help='"critical", "error", "warning", "info" or "debug"',
-        type=str,
-    )
-    parser.add_argument(
-        "--port",
-        help="the port to use",
-        type=int,
-    )
-    args = parser.parse_args()
-
-    # set defaults
-    comm_defaults = {
-        "tcp": ["socket", 5020],
-        "udp": ["socket", 5020],
-        "serial": ["rtu", "/dev/ptyp0"],
-        "tls": ["tls", 5020],
-    }
-    framers = {
-        "ascii": ModbusAsciiFramer,
-        "binary": ModbusBinaryFramer,
-        "rtu": ModbusRtuFramer,
-        "socket": ModbusSocketFramer,
-        "tls": ModbusTlsFramer,
-    }
-    _logger.setLevel(args.log.upper() if args.log else logging.INFO)
-    if not args.comm:
-        args.comm = "tcp"
-    if not args.framer:
-        args.framer = comm_defaults[args.comm][0]
-    args.port = args.port or comm_defaults[args.comm][1]
-    args.framer = framers[args.framer]
-    return args
-
-
 if __name__ == "__main__":
-    # Connect/disconnect no calls.
-    testclient = setup_client()
-    asyncio.run(run_client(testclient))
+    cmd_args = get_commandline(
+        server=False,
+        description="Run asynchronous client.",
+    )
+    testclient = setup_async_client(cmd_args)
+    asyncio.run(run_async_client(testclient), debug=True)

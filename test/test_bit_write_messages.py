@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Bit Message Test Fixture.
 
 This fixture tests the functionality of all the
@@ -7,8 +6,8 @@ bit based request/response messages:
 * Read/Write Discretes
 * Read Coils
 """
-from test.conftest import FakeList, MockContext
 import unittest
+from test.conftest import FakeList, MockContext
 
 from pymodbus.bit_write_message import (
     WriteMultipleCoilsRequest,
@@ -133,10 +132,3 @@ class ModbusBitMessageTests(unittest.TestCase):
         for request in requests:
             result = str(request)
             self.assertTrue(result is not None and len(result))
-
-
-# ---------------------------------------------------------------------------#
-#  Main
-# ---------------------------------------------------------------------------#
-if __name__ == "__main__":
-    unittest.main()

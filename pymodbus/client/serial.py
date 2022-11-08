@@ -1,18 +1,22 @@
 """Modbus client async serial communication."""
-from functools import partial
 import asyncio
-import time
 import logging
-
-from serial_asyncio import create_serial_connection
-import serial
+import time
+from functools import partial
 
 from pymodbus.client.base import ModbusBaseClient, ModbusClientProtocol
 from pymodbus.constants import Defaults
+from pymodbus.exceptions import ConnectionException
 from pymodbus.framer import ModbusFramer
 from pymodbus.framer.rtu_framer import ModbusRtuFramer
-from pymodbus.exceptions import ConnectionException
 from pymodbus.utilities import ModbusTransactionState, hexlify_packets
+
+
+try:
+    import serial
+    from serial_asyncio import create_serial_connection
+except ImportError:
+    pass
 
 
 _logger = logging.getLogger(__name__)
@@ -59,6 +63,7 @@ class AsyncModbusSerialClient(ModbusBaseClient):
         **kwargs: any,
     ) -> None:
         """Initialize Asyncio Modbus Serial Client."""
+        self.protocol = None
         super().__init__(framer=framer, **kwargs)
         self.params.port = port
         self.params.baudrate = baudrate
@@ -67,7 +72,6 @@ class AsyncModbusSerialClient(ModbusBaseClient):
         self.params.stopbits = stopbits
         self.params.handle_local_echo = handle_local_echo
         self.loop = None
-        self.protocol = None
         self._connected_event = asyncio.Event()
 
     async def close(self):  # pylint: disable=invalid-overridden-method
@@ -77,7 +81,7 @@ class AsyncModbusSerialClient(ModbusBaseClient):
 
     def _create_protocol(self):
         """Create protocol."""
-        protocol = ModbusClientProtocol(framer=self.framer)
+        protocol = ModbusClientProtocol(framer=self.params.framer, xframer=self.framer)
         protocol.factory = self
         return protocol
 
@@ -101,6 +105,7 @@ class AsyncModbusSerialClient(ModbusBaseClient):
                 bytesize=self.params.bytesize,
                 stopbits=self.params.stopbits,
                 parity=self.params.parity,
+                timeout=self.params.timeout,
                 **self.params.kwargs,
             )
             await self._connected_event.wait()

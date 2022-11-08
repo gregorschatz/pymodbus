@@ -1,10 +1,8 @@
-#!/usr/bin/env python3
 """Test client sync."""
-from itertools import count
 import ssl
-
-from test.conftest import mockSocket
 import unittest
+from itertools import count
+from test.conftest import mockSocket
 from unittest.mock import MagicMock, Mock, patch
 
 import serial
@@ -494,10 +492,3 @@ class SynchronousClientTest(
             f"framer={client.framer}, timeout={client.params.timeout}>"
         )
         self.assertEqual(repr(client), rep)
-
-
-# ---------------------------------------------------------------------------#
-# Main
-# ---------------------------------------------------------------------------#
-if __name__ == "__main__":
-    unittest.main()

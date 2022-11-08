@@ -32,7 +32,9 @@ Commands:
   serial
   tcp
 
+# Or using a Docker run command instead
 
+✗ docker run -it riptideio/pymodbus pymodbus.console --help
 ```
 TCP Options
 
